@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Infinite Compliment Machine</title>
+  <meta name="description" content="Press the button (or Space) for endless, wholesome compliments. Save your favorites, copy or share them.">
+  <style>
+    :root{
+      --bg1: 260 90% 14%;
+      --bg2: 300 80% 18%;
+      --card: 0 0% 100%;
+      --text: 0 0% 12%;
+      --muted: 0 0% 40%;
+      --accent: 270 90% 60%;
+      --accent-2: 200 90% 60%;
+      --ring: 270 90% 60%;
+      --shadow: 0 0% 0% / 0.35;
+      --radius: 1.2rem;
+    }
+
+    /* Background gradient & subtle motion */
+    body{
+      margin:0;
+      min-height:100svh;
+      color:hsl(var(--text));
+      background:
+        radial-gradient(1200px 800px at 10% 10%, hsl(var(--bg2)) 0%, transparent 60%),
+        radial-gradient(900px 700px at 90% 90%, hsl(var(--bg1)) 0%, transparent 60%),
+        linear-gradient(160deg, hsl(var(--bg1)), hsl(var(--bg2)));
+      display:grid;
+      place-items:center;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+      background-attachment: fixed;
+    }
+
+    .wrap{
+      width:min(920px, 92vw);
+      display:grid;
+      gap:1rem;
+      padding:clamp(1rem, 2vw + 0.5rem, 2rem);
+    }
+
+    .title{
+      color:white;
+      text-align:center;
+      line-height:1.1;
+      font-weight:800;
+      letter-spacing:0.2px;
+      font-size:clamp(1.6rem, 1rem + 3vw, 3rem);
+      text-shadow: 0 6px 24px hsl(var(--shadow));
+    }
+
+    .card{
+      background:hsl(var(--card));
+      border-radius: var(--radius);
+      box-shadow:
+        0 10px 30px -10px hsl(var(--shadow)),
+        0 20px 70px -30px hsl(var(--shadow));
+      padding: clamp(1rem, 1.5rem + 2vw, 2.2rem);
+      display:grid;
+      gap:1.2rem;
+    }
+
+    .compliment{
+      font-size: clamp(1.4rem, 1.1rem + 1.8vw, 2rem);
+      line-height:1.25;
+      font-weight:700;
+      letter-spacing:.2px;
+      min-height:3lh;
+    }
+
+    /* animated reveal */
+    .reveal{
+      animation: fadeUp .45s ease-out both;
+    }
+    @keyframes fadeUp{
+      from { opacity:0; transform: translateY(6px) scale(.995); }
+      to   { opacity:1; transform: translateY(0) scale(1); }
+    }
+
+    .controls{
+      display:flex;
+      flex-wrap:wrap;
+      gap:.6rem;
+      align-items:center;
+    }
+
+    button{
+      appearance:none;
+      border:0;
+      border-radius: calc(var(--radius) - .3rem);
+      padding:.85rem 1.05rem;
+      font-weight:700;
+      letter-spacing:.2px;
+      cursor:pointer;
+      background:hsl(var(--text));
+      color:white;
+      box-shadow: 0 6px 18px -8px hsl(var(--shadow));
+      transition: transform .08s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+    }
+    button:hover{ transform: translateY(-1px); }
+    button:active{ transform: translateY(0); }
+    button:focus-visible{
+      outline: 3px solid hsl(var(--ring));
+      outline-offset:2px;
+    }
+
+    .primary{
+      background: linear-gradient(135deg, hsl(var(--accent)), hsl(var(--accent-2)));
+    }
+
+    .ghost{
+      background: hsl(0 0% 96%);
+      color:hsl(var(--text));
+    }
+
+    .toolbar{
+      margin-left:auto;
+      display:flex; gap:.5rem; align-items:center;
+    }
+
+    .statbar{
+      display:flex;
+      gap:1rem;
+      color:hsl(var(--muted));
+      font-size:.95rem;
+      flex-wrap:wrap;
+    }
+
+    .pill{
+      background: hsl(0 0% 96%);
+      color:hsl(var(--muted));
+      border-radius: 999px;
+      padding:.35rem .7rem;
+      display:inline-flex; align-items:center; gap:.45rem;
+      font-weight:600;
+    }
+
+    .list{
+      display:grid;
+      gap:.6rem;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+    .fav{
+      background: hsl(0 0% 98%);
+      border:1px solid hsl(0 0% 90%);
+      border-radius: calc(var(--radius) - .5rem);
+      padding:.75rem .9rem;
+      font-size:.95rem;
+      line-height:1.35;
+      display:flex; gap:.6rem; align-items:flex-start; justify-content:space-between;
+    }
+
+    .muted{ color:hsl(var(--muted)); }
+    .sr-only{
+      position:absolute!important; width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;
+    }
+
+    /* Respect reduced motion */
+    @media (prefers-reduced-motion: reduce){
+      .reveal{ animation:none; }
+      button{ transition:none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap" role="main">
+    <h1 class="title">✨ The Infinite Compliment Machine</h1>
+
+    <section class="card" aria-labelledby="compliment-label">
+      <h2 id="compliment-label" class="sr-only">Compliment</h2>
+      <p id="compliment" class="compliment reveal" aria-live="polite">
+        Press <kbd>Space</kbd> or click “New Compliment” to begin.
+      </p>
+
+      <div class="controls">
+        <button id="newBtn" class="primary" type="button" title="Get a new compliment (Space)">
+          ◦ New Compliment
+        </button>
+        <button id="likeBtn" class="ghost" type="button" title="Save to favorites (L)">
+          ❤ Save
+        </button>
+        <div class="toolbar">
+          <button id="copyBtn" class="ghost" type="button" title="Copy to clipboard">
+            ⎘ Copy
+          </button>
+          <button id="shareBtn" class="ghost" type="button" title="Share">
+            ↗ Share
+          </button>
+          <label class="pill" title="Auto-play a compliment every 10s">
+            <input id="autoToggle" type="checkbox" aria-label="Auto-play every 10 seconds" />
+            Auto-play
+          </label>
+        </div>
+      </div>
+
+      <div class="statbar" aria-live="polite">
+        <span class="pill" id="visitCount">This visit: 0</span>
+        <span class="pill" id="allTimeCount">All-time: 0</span>
+        <span class="pill" id="favCount">Favorites: 0</span>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="favorites-label">
+      <div style="display:flex; align-items:center; gap:.6rem; justify-content:space-between;">
+        <h2 id="favorites-label" style="margin:0;font-size:1.05rem;">⭐ Your Favorites</h2>
+        <button id="clearFavs" class="ghost" type="button" title="Remove all favorites">Clear all</button>
+      </div>
+      <div id="favorites" class="list" role="list" aria-live="polite" aria-busy="false"></div>
+      <p id="noFavs" class="muted" style="margin:0;">No favorites yet. Save one you love!</p>
+    </section>
+
+    <footer class="muted" style="text-align:center; font-size:.9rem;">
+      Pro tip: Press <strong>Space</strong> for a new compliment, <strong>L</strong> to save. Be kind to yourself.
+    </footer>
+  </main>
+
+  <script>
+    // --- Compliment data -----------------------------------------------------
+    const COMPLIMENTS = [
+      "You have a gift for making people feel seen.",
+      "Your curiosity is contagious.",
+      "You turn obstacles into stepping stones.",
+      "Your perspective adds value every time.",
+      "You’re more capable than you realize.",
+      "Your kindness ripples farther than you think.",
+      "The way you solve problems is inspiring.",
+      "You make difficult things look easy.",
+      "Your presence makes rooms brighter.",
+      "You notice details that matter.",
+      "Your laughter is pure sunshine.",
+      "You bring out the best in others.",
+      "You’ve got excellent taste.",
+      "You’re a quick study and it shows.",
+      "Your self-awareness is a superpower.",
+      "You are steady under pressure.",
+      "Your honesty is refreshing.",
+      "You’re growing in all the right ways.",
+      "You’re exactly who you need to be today.",
+      "You ask thoughtful questions.",
+      "You communicate with clarity and warmth.",
+      "You make people feel safe to be themselves.",
+      "Your ideas are original and meaningful.",
+      "You’re resilient—nothing keeps you down for long.",
+      "You’re a natural at connecting dots.",
+      "You’re brave enough to try, and that matters.",
+      "You radiate calm in chaos.",
+      "You’re the kind of person others count on.",
+      "You find beauty in small moments.",
+      "You bring order without killing creativity.",
+      "You learn fast and share generously.",
+      "You’re a light in heavy times.",
+      "You carry yourself with quiet confidence.",
+      "You’re patient with your progress.",
+      "You make thoughtful choices.",
+      "You don’t just dream—you build.",
+      "You show up. That’s rare and wonderful.",
+      "You’re crafting a life that fits you.",
+      "You make complexities feel approachable.",
+      "You listen like it’s a gift (because it is).",
+      "You’re kinder than you have to be.",
+      "You’ve got great comedic timing.",
+      "You adapt with grace.",
+      "You’re turning effort into excellence.",
+      "You create space for others to shine.",
+      "You’re a careful thinker and a bold doer.",
+      "You’ve got a magnetic authenticity.",
+      "You’re exactly the right kind of weird.",
+      "You’re building a sturdy kind of happiness.",
+      "You make patience look powerful.",
+      "Your growth curve is impressive.",
+      "You’re the plot twist in the best way.",
+      "You make good habits look cool.",
+      "You’re proof that gentle can be strong.",
+      "You find a way—always.",
+      "You’re thoughtful with your words.",
+      "You’re a walking green flag.",
+      "You’re better than yesterday (and that’s enough).",
+      "You’re the kind of persistent that wins.",
+      "You put care into the craft.",
+      "You’re leveling up with intention.",
+      "You make hard work look artful.",
+      "You’re a brilliant problem untangler.",
+      "You’ve got range—and depth.",
+      "You’re a quiet trendsetter.",
+      "You’ve got main-character energy, respectfully.",
+      "You’re generous with your attention.",
+      "You’re building something beautiful here.",
+      "You turn “what if” into “why not”.",
+      "You’re composed and courageous.",
+      "You bring good chaos—the creative kind.",
+      "You’re gentle with your standards and strong with your boundaries.",
+      "You’re reliable without being rigid.",
+      "You notice what matters to people.",
+      "You’re excellent company.",
+      "You’re proof that consistency compounds.",
+      "You have taste and kindness—elite combo.",
+      "You’re patient with people, including yourself.",
+      "You keep promises, especially to you.",
+      "You’re curious enough to change your mind.",
+      "You make progress feel fun.",
+      "You’re a calm lake with deep water.",
+      "You have a talent for timing.",
+      "You’re gold at giving feedback.",
+      "You’re humble and high-performing—rare pair.",
+      "You turn lessons into leverage.",
+      "You bring clarity to fog.",
+      "You’re a lighthouse in someone’s weather.",
+      "You make effort look elegant.",
+      "You’ve got a builder’s heart.",
+      "You’re quietly unstoppable.",
+      "You’re exactly what this moment needed."
+    ];
+
+    // --- State & storage -----------------------------------------------------
+    const $ = (sel, root=document) => root.querySelector(sel);
+    const complimentEl   = $("#compliment");
+    const newBtn         = $("#newBtn");
+    const likeBtn        = $("#likeBtn");
+    const copyBtn        = $("#copyBtn");
+    const shareBtn       = $("#shareBtn");
+    const autoToggle     = $("#autoToggle");
+    const visitCountEl   = $("#visitCount");
+    const allTimeCountEl = $("#allTimeCount");
+    const favCountEl     = $("#favCount");
+    const favList        = $("#favorites");
+    const noFavs         = $("#noFavs");
+    const clearFavsBtn   = $("#clearFavs");
+
+    const KEYS = {
+      allTime: "icm_all_time_count",
+      favs: "icm_favorites",
+    };
+
+    let current = "";
+    let visitCount = 0;
+    let timer = null;
+
+    function readAllTime(){
+      const n = Number(localStorage.getItem(KEYS.allTime) || "0");
+      return Number.isFinite(n) ? n : 0;
+    }
+    function writeAllTime(n){
+      localStorage.setItem(KEYS.allTime, String(n));
+    }
+    function readFavs(){
+      try{
+        return JSON.parse(localStorage.getItem(KEYS.favs) || "[]");
+      }catch{ return []; }
+    }
+    function writeFavs(arr){
+      localStorage.setItem(KEYS.favs, JSON.stringify(arr));
+    }
+
+    // --- Compliment logic ----------------------------------------------------
+    function randomCompliment(){
+      // Avoid immediate repeats
+      let pick;
+      do {
+        pick = COMPLIMENTS[Math.floor(Math.random() * COMPLIMENTS.length)];
+      } while (COMPLIMENTS.length > 1 && pick === current);
+      current = pick;
+      return pick;
+    }
+
+    function showCompliment(text){
+      complimentEl.classList.remove("reveal");
+      // force reflow to restart animation
+      void complimentEl.offsetWidth;
+      complimentEl.textContent = text;
+      complimentEl.classList.add("reveal");
+    }
+
+    function newCompliment(){
+      const text = randomCompliment();
+      showCompliment(text);
+      // update counters
+      visitCount++;
+      const all = readAllTime() + 1;
+      writeAllTime(all);
+      updateStats();
+    }
+
+    // --- Favorites -----------------------------------------------------------
+    function renderFavorites(){
+      const favs = readFavs();
+      favList.innerHTML = "";
+      favList.setAttribute("aria-busy","true");
+
+      if(!favs.length){
+        noFavs.hidden = false;
+        favCountEl.textContent = "Favorites: 0";
+        favList.setAttribute("aria-busy","false");
+        return;
+      }
+
+      noFavs.hidden = true;
+      favs.forEach((txt, idx) => {
+        const item = document.createElement("div");
+        item.className = "fav";
+        item.role = "listitem";
+        const p = document.createElement("p");
+        p.style.margin = 0;
+        p.textContent = txt;
+        const del = document.createElement("button");
+        del.className = "ghost";
+        del.type = "button";
+        del.ariaLabel = `Remove favorite ${idx+1}`;
+        del.textContent = "✕";
+        del.addEventListener("click", () => {
+          const next = readFavs().filter(t => t !== txt);
+          writeFavs(next);
+          renderFavorites();
+          updateStats();
+        });
+        item.appendChild(p);
+        item.appendChild(del);
+        favList.appendChild(item);
+      });
+      favCountEl.textContent = `Favorites: ${favs.length}`;
+      favList.setAttribute("aria-busy","false");
+    }
+
+    function saveFavorite(){
+      if(!current) return;
+      const favs = new Set(readFavs());
+      favs.add(current);
+      writeFavs([...favs]);
+      renderFavorites();
+      updateStats();
+      likeBtn.textContent = "❤ Saved";
+      setTimeout(() => likeBtn.textContent = "❤ Save", 900);
+    }
+
+    // --- Utilities -----------------------------------------------------------
+    function updateStats(){
+      visitCountEl.textContent   = `This visit: ${visitCount}`;
+      allTimeCountEl.textContent = `All-time: ${readAllTime()}`;
+      favCountEl.textContent     = `Favorites: ${readFavs().length}`;
+    }
+
+    async function copyCurrent(){
+      if(!current) return;
+      try{
+        await navigator.clipboard.writeText(current);
+        copyBtn.textContent = "✓ Copied";
+        setTimeout(()=>copyBtn.textContent="⎘ Copy", 900);
+      }catch{
+        alert("Copy failed. You can select the text and copy manually.");
+      }
+    }
+
+    async function shareCurrent(){
+      if(!current) return;
+      const data = { title: "A compliment for you", text: current };
+      if(navigator.share){
+        try{ await navigator.share(data); }catch{ /* user canceled */ }
+      }else{
+        // Fallback: copy instead
+        copyCurrent();
+      }
+    }
+
+    function toggleAutoplay(on){
+      if(on){
+        // show immediately then every 10s
+        if(!current) newCompliment();
+        timer = setInterval(newCompliment, 10_000);
+      }else if(timer){
+        clearInterval(timer);
+        timer = null;
+      }
+    }
+
+    // --- Event wiring --------------------------------------------------------
+    newBtn.addEventListener("click", newCompliment);
+    likeBtn.addEventListener("click", saveFavorite);
+    copyBtn.addEventListener("click", copyCurrent);
+    shareBtn.addEventListener("click", shareCurrent);
+    autoToggle.addEventListener("change", e => toggleAutoplay(e.target.checked));
+    clearFavsBtn.addEventListener("click", () => {
+      if(confirm("Remove all favorites?")){
+        writeFavs([]);
+        renderFavorites();
+        updateStats();
+      }
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener("keydown", (e) => {
+      if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) return;
+      if (e.code === "Space"){
+        e.preventDefault();
+        newCompliment();
+      } else if (e.key.toLowerCase() === "l"){
+        saveFavorite();
+      } else if (e.key.toLowerCase() === "c"){
+        copyCurrent();
+      }
+    });
+
+    // Init
+    updateStats();
+    renderFavorites();
+  </script>
+</body>
+</html>
